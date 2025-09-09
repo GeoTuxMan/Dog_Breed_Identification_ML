@@ -6,17 +6,17 @@ from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
 from tensorflow.keras.models import Model
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
-# Setari directoare
+# folders
 train_dir = "train"
 val_dir = "test"
 
-# Parametri
+# Parameters
 IMAGE_SIZE = (224, 224)
 BATCH_SIZE = 32
 EPOCHS = 50
 NUM_CLASSES = 120  # ai 120 rase
 
-# Data Augmentation pentru train
+# Data Augmentation for train
 train_datagen = ImageDataGenerator(
     rescale=1.0/255,
     rotation_range=30,
@@ -28,7 +28,7 @@ train_datagen = ImageDataGenerator(
     fill_mode="nearest"
 )
 
-# Doar rescale pentru validare
+# rescale for validation
 val_datagen = ImageDataGenerator(rescale=1.0/255)
 
 train_generator = train_datagen.flow_from_directory(
@@ -45,14 +45,14 @@ val_generator = val_datagen.flow_from_directory(
     class_mode="categorical"
 )
 
-# ResNet50 pre-antrenat
+# ResNet50 pre-trained
 base_model = ResNet50(weights="imagenet", include_top=False, input_shape=(224, 224, 3))
 
-# ingheata layerele de jos (pastrezi feature extractorul)
+# freeze bottom layers de jos (keep feature extractor)
 for layer in base_model.layers:
     layer.trainable = False
 
-# Adauga clasificatorul final
+# Add final classificator
 x = base_model.output
 x = GlobalAveragePooling2D()(x)
 x = Dense(512, activation="relu")(x)
@@ -61,7 +61,7 @@ predictions = Dense(NUM_CLASSES, activation="softmax")(x)
 
 model = Model(inputs=base_model.input, outputs=predictions)
 
-# Compileaza
+# Compile
 model.compile(
     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4),
     loss="categorical_crossentropy",
@@ -72,7 +72,7 @@ model.compile(
 early_stop = EarlyStopping(monitor="val_loss", patience=5, restore_best_weights=True)
 checkpoint = ModelCheckpoint("best_dog_breed_model.h5", monitor="val_accuracy", save_best_only=True)
 
-#  Antrenare
+#  training
 history = model.fit(
     train_generator,
     validation_data=val_generator,
@@ -80,6 +80,8 @@ history = model.fit(
     callbacks=[early_stop, checkpoint]
 )
 
-#  Salveaza modelul final
+#  Save final model
 model.save("dog_breed_final.h5")
 print("Model antrenat si salvat!")
+
+
